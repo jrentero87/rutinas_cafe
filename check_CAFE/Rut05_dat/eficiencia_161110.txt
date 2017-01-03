@@ -1,0 +1,7 @@
+Numero de ficheros arco: 76
+Numero de ficheros flat: 60
+Numero de ficheros BIAS: 60
+Tiempo total de exposicion: 7.70277777778 horas
+Tiempo total para ficheros ARCO: 0.466666666667 horas
+Tiempo total para ciencia: 7.23611111111 horas
+EL APROVECHAMIENTO HA SIDO DEL: 71.8952553798 por ciento

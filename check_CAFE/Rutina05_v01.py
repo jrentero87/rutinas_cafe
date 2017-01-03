@@ -69,6 +69,11 @@ def runRutina05(directorio):
     minutosNoche=np.float(segundosNoche)/60.0
     horasNoche=np.float(segundosNoche)/3600.0
     
+    #Calculamos el numero de ficheros arco, flats y bias
+    numArcos=0
+    numFlats=0
+    numBias=0
+    
     # Recorremos el directorio y obtenemos los tiempos
     for fichero in listdir(directorio):
         if os.path.isfile(directorio+"/"+fichero) and fichero.endswith(".fits"):
@@ -79,10 +84,16 @@ def runRutina05(directorio):
             tiempo=f[0].header["EXPTIME"]
             tExposicion=np.float(tiempo)
             fechaJul=getDiaJuliano(rutaFich)
+            # Obtenemos el tipo de fichero que estamos tratando
+            objeto=f[0].header["OBJECT"]
+            if objeto.startswith("[arc]"):
+                numArcos=numArcos+1
+            if objeto.startswith("[flat]"):
+                numFlats=numFlats+1
+            if objeto.startswith("[Bias]"):
+                numBias=numBias+1
             # Comprobamos que la fecha del fichero este dentro de los limites del twilight
             if inicioTw<fechaJul and fechaJul<finTw:
-                # Obtenemos el tipo de fichero que estamos tratando
-                objeto=f[0].header["OBJECT"]
                 # Comprobamos si es de tipo arco y si es así sumamos su tiempo de exposicion
                 if objeto.startswith("[arc]"):
                     tiempoArco=tiempoArco+tExposicion
@@ -91,6 +102,9 @@ def runRutina05(directorio):
     
     eficiencia=(tiempoTotal/segundosNoche)*100.0
     tiempoCiencia=tiempoTotal-tiempoArco
+    print "Numero de ficheros arco: %d"%(numArcos)
+    print "Numero de ficheros flat: %d"%(numFlats)
+    print "Numero de ficheros BIAS: %d"%(numBias)
     print "Tiempo total de exposicion: %.2f horas"%(tiempoTotal/3600.0)
     print "Tiempo total para ficheros ARCO: %.2f horas"%(tiempoArco/3600.0)
     print "Tiempo total para ciencia: %.2f horas"%(tiempoCiencia/3600.0)
@@ -99,6 +113,9 @@ def runRutina05(directorio):
     # Almacenamos los resultados en un fichero: eficiencia_fecha.txt
     # Abrimos el fichero donde escribiremos los resultados
     outfile = open("./Rut05_dat/eficiencia_"+directorio+".txt","w")
+    outfile.write("Numero de ficheros arco: "+str(numArcos)+"\n")
+    outfile.write("Numero de ficheros flat: "+str(numFlats)+"\n")
+    outfile.write("Numero de ficheros BIAS: "+str(numBias)+"\n")
     outfile.write("Tiempo total de exposicion: "+str(tiempoTotal/3600.0)+" horas\n")
     outfile.write("Tiempo total para ficheros ARCO: "+str(tiempoArco/3600.0)+" horas\n")
     outfile.write("Tiempo total para ciencia: "+str(tiempoCiencia/3600.0)+" horas\n")

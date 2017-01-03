@@ -18,6 +18,8 @@ from lmfit import  Model
 from astroML.stats import sigmaG
 from os import listdir
 import matplotlib.gridspec as gridspec # GRIDSPEC !
+import datetime
+from jdcal import gcal2jd
 
 # Para instalar ephem: pip install lmfit
 
@@ -35,7 +37,10 @@ se generarán las estadísticas para los demás ficheros.
 """
 INPUT_SPOT="input_spot.txt"
 
-
+"""
+Constante donde se almacena el nombre del fichero Master para la rutina 01. En él se almacenarán las desviaciones medias de cada noche.
+"""
+FICH_MASTER="./Rut01_dat/desviaciones_master.txt"
 
 """
 Funcion que obtiene la matriz de datos a partir de una imagen de arco.
@@ -214,7 +219,7 @@ def generarInputSpot(ficheroSpot,matriz):
     outfile.close() 
     
 """
-Función que se encarga de generar un fichero de salida con nombre "arcoFits_dat.txt"
+Función que se encarga de generar un fichero de salida con nombre "arcoFits_dat.spot"
 con la siguiente información en cada linea del fichero:
 - IdSpot = identificador del spot de la imagen arcoFits
 - posX = coordenada X del centro del spot
@@ -253,8 +258,8 @@ def generarEstadisticas(inputSpots, arcoFits):
             #Obtenemos el centro del spot de la imagen que a analizar
             centro=getCentroVentana(venX,venY,matrizDat)
             #Calculamos las distancias de los respectivos centros
-            distX=abs(posXSpot-centro[0])
-            distY=abs(posYSpot-centro[1])
+            distX=(posXSpot-centro[0])
+            distY=(posYSpot-centro[1])
             #Obtenemos la submatriz para calcular la intensidad del spot
             subM=matrizDat[venX:venX+TAM_VENTANA*2,venY:venY+TAM_VENTANA*2]
             intensidad=np.sum(subM)
@@ -289,14 +294,15 @@ def rutina01Run(listaArcos):
             generarEstadisticas(INPUT_SPOT,line)
 
 """
-Función que realiza el promedio de las desviaciones de todos los spots para un fichero en concreto
+Función que realiza el promedio de las desviaciones de todos los spots para un fichero en concreto, y el promedio de las intensidades
 """
-def mostrarPromedio(fichero):
+def getPromedioDesv(fichero):
     #Abrimos el fichero
     infile = open("./Rut01_dat/"+fichero[fichero.index('/')+1:],'r')
     # Inicializamos contadores
     sumaX=0.0
     sumaY=0.0
+    sumaInt=0.0
     # Recorremos el fichero donde tenemos la informacion de los spots
     for line in infile:
          #Troceamos la linea, almacenando en spot[0] el id, spot[1] PosX, spot[2] PosY, spot[3] distX, spot[4] distY, spot[5] intensidad
@@ -306,20 +312,44 @@ def mostrarPromedio(fichero):
         if idSpot[0] != "@":
             sumaX=sumaX+float(spot[3])
             sumaY=sumaY+float(spot[4])
+            sumaInt=sumaInt+float(spot[5])
     infile.close()
     promedioX=sumaX/200
     promedioY=sumaY/200
-    print "Fichero: %s. Anchura ventana: %d px. Desviacion en X: %.4f px. Desviacion en Y: %.4f px" %(fichero,TAM_VENTANA*2, promedioX, promedioY)
+    promedioInt=sumaInt/200
+    return [promedioX,promedioY,promedioInt]
+    #print "Fichero: %s. Anchura ventana: %d px. Desviacion en X: %.4f px. Desviacion en Y: %.4f px" %(fichero,TAM_VENTANA*2, promedioX, promedioY)
     
-            
+"""
+Funcion que obtiene un array con las intensidades del fichero ARCO de referencia
+"""
+def getIntensidadReferencia():
+    #Abrimos el fichero
+    infile = open(INPUT_SPOT,'r')
+    # Inicializamos contadores
+    intensidadesRef=[]
+    # Recorremos el fichero donde tenemos la informacion de los spots
+    for line in infile:
+         #Troceamos la linea, almacenando en spot[0] el id, spot[1] PosVenX, spot[2] PosVenY, spot[3] posX, spot[4] posY, spot[5] intensidad
+        spot=line.split(",")
+        idSpot=spot[0]
+        #Comprobamos que la linea no sea un comentario, es decir, que no comience por @
+        if idSpot[0] != "@":
+            intensidadesRef.append(float(spot[5]))
+    infile.close()
+    return intensidadesRef
 
 """
-Función que muestra el promedio de las desviaciones de todos los spots estudiados
+Función que muestra el promedio de las desviaciones de todos los spots estudiados y de las intensidades
 Para ello, hace uso del fichero que contiene el litado de imágenes de arco y accede
 a los ficheros "arco_dat.txt" para mostrar el promedio de las desviaciones de los spots.
 Es necesario haber ejecutado la rutina para poder ejecutar esta función, es decir, deben existir los ficheros
 """
 def promedioDistancias(listaArcos):
+    #Inicializamos vectores donde se almacenara las desviaciones medias de cada fichero asi como las intensidades
+    desvX=[]
+    desvY=[]
+    intensidad=[]
     # Abrimos el fichero con el listado de ficheros arco
     infile = open(listaArcos,'r')
     # Procesamos cada una de las lineas del fichero, y generamos las estadísticas para cada fichero de arco
@@ -329,11 +359,149 @@ def promedioDistancias(listaArcos):
             #Eliminamos de la linea el retorno de carro (\n), eliminamos la extensión .fits y añadimos "_fecha.spot"
             line=line.strip()
             line=line[0:len(line)-5]+"_"+line[0:6]+".spot"
-            mostrarPromedio(line)
+            fichDat=getPromedioDesv(line)
+            desvX.append(fichDat[0])
+            desvY.append(fichDat[1])
+            intensidad.append(fichDat[2])
+    #Calculamos las intensidades normalizadas de la noche
+    intRef=getIntensidadReferencia()
+    intNorm=np.array(intensidad[:])/np.mean(intRef)
     infile.close()
+    return [np.mean(desvX), np.mean(desvY), np.mean(intNorm)]      
 
 """
+Esta función devolverá true en caso de que exista en el fichero bias_master.txt 
+una entrada para la noche que se introduce por parámetro, y false en caso contrario.
+El dia juliano introducido por parámetro debe ser un valor entero.
+"""
+def existeNoche(diaJuliano):
+    # Abrimos el fichero en modo lectura
+    infile=open(FICH_MASTER,'r')
+    # Creamos una variable que inicialmente inicializamos a falso
+    existe=False
+    # Recorremos el fichero y comparamos cada una de las lineas
+    for line in infile:
+        #Ignoramos las lineas que comiencen por @, puesto que se trata de un comentario en el fichero
+        if line[0]!='@':
+            # Obtenemos el dia juliano almacenado en la primera posicion de la linea
+            linea=line.split(',')
+            juldate=np.int(linea[0])
+            if juldate==diaJuliano:
+                existe=True
+    infile.close()
+    return existe
+    
 
+"""
+Función que se encarga de genera el fichero Master de la rutina y de chequear los datos
+Se le pasa por parametro la lista de ficheros arco.
+"""
+def checkRutina01(listaArcos):
+    #Obtenemos el promedio de las desviaciones en X y en Y de los spots y el promedio de las intensidades normalizadas
+    [desvX, desvY, intNorm]=promedioDistancias(listaArcos)
+    # Añadimos el valor de la media de todas las desviaciones de los spots de la noche al fichero master
+    # Si existe el fichero lo abrimos en modo "a", sino lo creamos
+    if os.path.exists(FICH_MASTER):
+        file=open(FICH_MASTER,"a")
+    else:
+        file=open(FICH_MASTER,"w")
+        file.write("@juldate,desvX_media,desvY_media,intensidad_Norm\n")
+    # Abrimos el fichero con el listado de ficheros arco
+    infile = open(listaArcos,'r')
+    # Obtenemos el dia juliano para uno de los ficheros arco de la noche
+    imagen = infile.readline().strip()
+    infile.close()
+    juldate=getDiaJuliano(imagen)
+    #Comprobamos que la entrada en el fichero no exista. En caso de no existir escribimos nueva entrada
+    if not existeNoche(np.int(juldate)):
+        file.write(str(np.int(juldate))+","+str(round(desvX,4))+","+str(round(desvY,4))+","+str(intNorm)+"\n")
+    file.close()
+    
+    #Realizamos el checkeo para la rutina01
+    # Si las desviciones medias de los spots son menores a 20 milipíxeles y la intensidad normalizada esta entre el 0.99% y el 1.01%
+    if desvX < 0.02 and desvX>-0.02:
+        print "... Desviación media en eje X: %.2f ... OK"%(desvX)
+    else:
+        print "... Desviación media en eje X: %.2f ... NO OK! - CHECK"%(desvX)
+    if desvY < 0.02 and desvY>-0.02:
+        print "... Desviación media en eje Y: %.2f ... OK"%(desvY)
+    else:
+        print "... Desviación media en eje Y: %.2f ... NO OK! - CHECK"%(desvY)
+    if intNorm > 0.99 and intNorm < 1.01:
+        print "... Ruido de lectura medio: %.2f ... OK"%(intNorm)
+    else:
+        print "... Ruido de lectura medio: %.2f ... NO OK! - CHECK"%(intNorm)
+        
+"""
+Funcion encargada de añadir pintar y añadir al historial los resultados obtenidos en la noche que se esta ejecutando
+"""
+def plotHistory():
+    colnames = ('jd','desvX','desvY','intNorm')
+    table = ascii.read('Rut01_dat/desviaciones_master.txt', format='csv', names=colnames, comment='@')	
+    jd  = np.array(table["jd"])
+    desvX   = np.array(table["desvX"])
+    desvY   = np.array(table["desvY"])
+    intNorm   = np.array(table["intNorm"])
+    
+    today = datetime.datetime.now()
+    today = astropy.time.Time(today)
+    jd_today = np.int(today.jd)
+    jd_ini=jd_today-180
+    
+    plt.figure(figsize=(12,7))
+    gs = gridspec.GridSpec(3,1)
+    gs.update(left=0.08, right=0.95, bottom=0.08, top=0.93, wspace=0.2, hspace=0.1)
+    
+    ax = plt.subplot(gs[0,0])
+    ax.set_ylabel(r'$\Delta x$ (pix)')
+    ax.get_xaxis().set_ticks([])
+    ax.set_ylim([-4,4])
+    ax.set_xlim([0,180])
+    arr = desvX
+    plt.errorbar(jd-jd_ini,desvX,yerr=0,fmt='o',c='red')
+    for year in range(10):
+    	jdyear = gcal2jd(2011+year,1,1)
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	begin = jdyear[0]+jdyear[1]-jd_ini
+    	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
+     
+    
+    ax = plt.subplot(gs[1,0])
+    ax.set_ylabel(r'$\Delta y$ (pix)')
+    label=r'JD-'+str(jd_ini)+' (days)'
+    ax.set_xlabel(label)
+    ax.set_xlim([0,180])
+    ax.set_ylim([-4,4])
+    arr = desvY
+    plt.errorbar(jd-jd_ini,desvY,yerr=0,fmt='o',c='red')
+    for year in range(10):
+    	jdyear = gcal2jd(2011+year,1,1)
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	begin = jdyear[0]+jdyear[1]-jd_ini
+    	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
+    
+    ax = plt.subplot(gs[2,0])
+    ax.set_ylabel('Norm. Intensity')
+    label=r'JD-'+str(jd_ini)+' (days)'
+    ax.set_xlabel(label)
+    ax.set_xlim([0,180])
+    ax.set_ylim([0.5,1.5])
+    
+    for year in range(10):
+    	jdyear = gcal2jd(2011+year,1,1)
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	begin = jdyear[0]+jdyear[1]-jd_ini
+    	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
+    
+    arr = intNorm
+    
+    plt.scatter(jd-jd_ini,intNorm,c=arr, cmap='winter',vmin=3.5, vmax=6)
+    plt.savefig('spots_history_CAFE.pdf')
+
+
+        
+"""
+Plot de los resultados de la noche que se esta ejecutando
 """
 def Plot1night(night):
 	#Directorio de trabajo y numero de ficheros

@@ -15,6 +15,11 @@ import astropy.time
 from dateutil import parser
 import os.path
 from astroML.stats import sigmaG
+from astropy.io import ascii
+import datetime
+from jdcal import gcal2jd
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec # GRIDSPEC !
 
 """
 Definición de constantes:
@@ -46,9 +51,9 @@ def existeNoche(diaJuliano):
     infile.close()
     return existe
         
-        
-    
-
+"""
+Funcion encargada de llevar a cabo la ejecucion de la rutina 4
+"""
 def runRutina04(directorio):
      # Abrimos el fichero con el listado de ficheros bias
     infile = open(FICH_BIAS,'r')
@@ -95,5 +100,67 @@ def runRutina04(directorio):
     desvTipica_total=sigmaG(biasNoche)
     #Comprobamos que la entrada en el fichero no exista. En caso de no existir escribimos nueva entrada
     if not existeNoche(np.int(juldate)):
-        file.write(str(np.int(juldate))+","+str(round(mediana_total,4))+","+str(round(media_total,4))+str(round(desvTipica_total,4))+"\n")
+        file.write(str(np.int(juldate))+","+str(round(mediana_total,4))+","+str(round(media_total,4))+","+str(round(desvTipica_total,4))+"\n")
     file.close()
+    # Realizamos el checkeo de valores umbrales. 
+    # Si el bias medio está entre 810 y 830 es correcto, y si el ruido de lectura es menor que 6 será también correcto.
+    if media_total >= 810 and media_total <=830:
+        print "... Nivel BIAS medio: %.2f ... OK"%(media_total)
+    else:
+        print "... Nivel BIAS medio: %.2f ... NO OK! - CHECK"%(media_total)
+    if desvTipica_total < 6:
+        print "... Ruido de lectura medio: %.2f ... OK"%(desvTipica_total)
+    else:
+        print "... Ruido de lectura medio: %.2f ... NO OK! - CHECK"%(desvTipica_total)
+        
+"""
+Funcion encargada de añadir pintar y añadir al historial los resultados obtenidos en la noche que se esta ejecutando
+"""
+def plotHistory():
+    colnames = ('jd','bias','noise','std')
+    table = ascii.read('Rut04_dat/bias_master.txt', format='csv', names=colnames, comment='@')	
+    jd  = np.array(table["jd"])
+    bias   = np.array(table["bias"])
+    std   = np.array(table["std"])
+    
+    today = datetime.datetime.now()
+    today = astropy.time.Time(today)
+    jd_today = np.int(today.jd)
+    jd_ini=jd_today-180
+    
+    plt.figure(figsize=(12,7))
+    gs = gridspec.GridSpec(2,1)
+    gs.update(left=0.08, right=0.95, bottom=0.08, top=0.93, wspace=0.2, hspace=0.1)
+    
+    ax = plt.subplot(gs[0,0])
+    ax.set_ylabel(r'Bias (ADUs)')
+    ax.get_xaxis().set_ticks([])
+    ax.set_ylim([800,900])
+    ax.set_xlim([0,180])
+    arr = bias
+    plt.errorbar(jd-jd_ini,bias,yerr=0,fmt='o',c='red')
+    for year in range(10):
+    	jdyear = gcal2jd(2011+year,1,1)
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	begin = jdyear[0]+jdyear[1]-jd_ini
+    	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
+     
+    
+    ax = plt.subplot(gs[1,0])
+    ax.set_ylabel(r'Ruido de lectura (ADUs)')
+    label=r'JD-'+str(jd_ini)+' (days)'
+    ax.set_xlabel(label)
+    ax.set_xlim([0,180])
+    ax.set_ylim([2,7])
+    
+    for year in range(10):
+    	jdyear = gcal2jd(2011+year,1,1)
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	begin = jdyear[0]+jdyear[1]-jd_ini
+    	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
+    
+    
+    arr = std
+    
+    plt.scatter(jd-jd_ini,std,c=arr, cmap='winter',vmin=3.5, vmax=6)
+    plt.savefig('bias_history_CAFE.pdf')

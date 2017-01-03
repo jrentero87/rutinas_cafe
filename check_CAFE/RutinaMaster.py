@@ -25,6 +25,12 @@ import Rutina04_v01
 import Rutina05_v01
 
 """
+Constantes para almacenar la ruta de los ficheros arco y flats que tomamos como referencia
+"""
+ARCO_REF="./cali_0061.fits"
+FLAT_REF="./cali_0032.fits"
+
+"""
 Constantes donde almacenamos los nombres de los ficheros que contienen el listado
 de ficheros arco,flat y bias 
 """
@@ -64,7 +70,7 @@ def generarListaFicheros():
                 tipo=objeto[:objeto.index(']')+1]
             else:
                 tipo='[science]'
-            print "%s - %s"%(rutaFich,tipo)
+            #print "%s - %s"%(rutaFich,tipo)
             #Clasificamos los ficheros segun su tipo y creamos una lista de ficheros para cada tipo
             if tipo=='[arc]':
                 arcoFits.write(rutaFich+"\n")
@@ -85,18 +91,24 @@ Función que se encarga de lanzar las rutinas 1 y 2
 """
 def run_Rutina01_Rutina02(directorio):
     #Arrancamos la rutina 01. 
+    print "EJECUTANDO RUTINA 01: ARC-SPOTS ..."
     # Obtenemos la matriz de datos del fichero que cogemos como referencia
-    tbdata=Rutina01_v01.getMatrizDatos("./cali_0075.fits")
+    tbdata=Rutina01_v01.getMatrizDatos(ARCO_REF)
     # Generamos el fichero input_spot.txt que utilizaremos para el estudio
     Rutina01_v01.generarInputSpot("./spots.txt",tbdata)
     # Lanzamos la rutina generando para cada fichero arco un fichero de datos con los resultados
     Rutina01_v01.rutina01Run(FICH_ARCO)
-    Rutina01_v01.promedioDistancias(FICH_ARCO)
+    #Rutina01_v01.promedioDistancias(FICH_ARCO)
+    # Generamos el fichero Master de la primera rutina:
+    Rutina01_v01.checkRutina01(FICH_ARCO)
      # Si no existe el fichero pdf, generamos el plot para la rutina 01
-    if not os.path.exists("./Rut01_dat/Rutina01_plot_1night_"+directorio[0:6]+".pdf"):
-        Rutina01_v01.Plot1night(directorio)
+#    if not os.path.exists("./Rut01_dat/Rutina01_plot_1night_"+directorio[0:6]+".pdf"):
+#        Rutina01_v01.Plot1night(directorio)
     
+    # Cargamos ajustes de la rutina02
+    Rutina02_v01.cargarAjustes(FLAT_REF)
     # Lanzamos la rutina 02.
+    print "EJECUTANDO RUTINA 02: Posición e intensidad del flat ..."
     Rutina02_v01.rutina02Run(FICH_FLAT)
     
 
@@ -106,8 +118,14 @@ if len(sys.argv)==2:
     if os.path.exists(sys.argv[1]) and not os.path.isfile(sys.argv[1]):
         generarListaFicheros()
         run_Rutina01_Rutina02(sys.argv[1])
+        print "EJECUTANDO RUTINA 04: Control del nivel de BIAS ..."
         Rutina04_v01.runRutina04(sys.argv[1])
+        print "EJECUTANDO RUTINA 05: Calculando tiempos de observación ..."
         Rutina05_v01.runRutina05(sys.argv[1])
+        # Hacemos los plots
+        Rutina01_v01.plotHistory()
+        Rutina02_v01.plotHistory()
+        Rutina04_v01.plotHistory()
     else:
         print "El directorio introducido no existe"
 else:
