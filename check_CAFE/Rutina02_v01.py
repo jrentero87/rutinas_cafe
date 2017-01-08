@@ -281,19 +281,19 @@ def checkRutina02(listaAjustes, listaFlat):
     file.close()
     
     #Realizamos el checkeo para la rutina02
-    # Si las desviciones medias de los ordenes son menores a 20 milipíxeles
-    if desvMedia10 < 0.02 and desvMedia10 > -0.02:
-        print "... Desviación media del orden 10: %.2f ... OK"%(desvMedia10)
+    # Si las desviciones medias de los ordenes son menores a 100 milipíxeles
+    if desvMedia10 < 0.1 and desvMedia10 > -0.1:
+        print "... Desviación media del orden 10: %.2f pix ... OK"%(desvMedia10)
     else:
-        print "... Desviación media del orden 10: %.2f ... NO OK! - CHECK"%(desvMedia10)
-    if desvMedia40 < 0.02 and desvMedia40 > -0.02:
-        print "... Desviación media del orden 40: %.2f ... OK"%(desvMedia40)
+        print "... Desviación media del orden 10: %.2f pix ... NO OK! - CHECK"%(desvMedia10)
+    if desvMedia40 < 0.1 and desvMedia40 > -0.1:
+        print "... Desviación media del orden 40: %.2f pix ... OK"%(desvMedia40)
     else:
-        print "... Desviación media del orden 40: %.2f ... NO OK! - CHECK"%(desvMedia40)
-    if desvMedia70 < 0.02 and desvMedia70 > -0.02:
-        print "... Desviación media del orden 70: %.2f ... OK"%(desvMedia70)
+        print "... Desviación media del orden 40: %.2f pix ... NO OK! - CHECK"%(desvMedia40)
+    if desvMedia70 < 0.1 and desvMedia70 > -0.1:
+        print "... Desviación media del orden 70: %.2f pix ... OK"%(desvMedia70)
     else:
-        print "... Desviación media del orden 70: %.2f ... NO OK! - CHECK"%(desvMedia70)
+        print "... Desviación media del orden 70: %.2f pix ... NO OK! - CHECK"%(desvMedia70)
     
     
     
@@ -373,10 +373,12 @@ def plotHistory():
     plt.errorbar(jd-jd_ini,desv10,yerr=0,fmt='o',c='red')
     for year in range(10):
     	jdyear = gcal2jd(2011+year,1,1)
-    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls=':', c='gray')
     	begin = jdyear[0]+jdyear[1]-jd_ini
     	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
-     
+    plt.grid(ls=':',c='gray')
+    plt.axhline(0.1,ls='--',c='red')
+    plt.axhline(-0.1,ls='--',c='red')
     
     ax = plt.subplot(gs[1,0])
     ax.set_ylabel(r'$\Delta y$ (pix) - Orden 40')
@@ -388,9 +390,12 @@ def plotHistory():
     plt.errorbar(jd-jd_ini,desv40,yerr=0,fmt='o',c='red')
     for year in range(10):
     	jdyear = gcal2jd(2011+year,1,1)
-    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls=':', c='gray')
     	begin = jdyear[0]+jdyear[1]-jd_ini
     	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
+    plt.grid(ls=':',c='gray')
+    plt.axhline(0.1,ls='--',c='red')
+    plt.axhline(-0.1,ls='--',c='red')
     
     ax = plt.subplot(gs[2,0])
     ax.set_ylabel(r'$\Delta y$ (pix) - Orden 70')
@@ -401,10 +406,13 @@ def plotHistory():
     plt.errorbar(jd-jd_ini,desv70,yerr=0,fmt='o',c='red')
     for year in range(10):
     	jdyear = gcal2jd(2011+year,1,1)
-    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls=':', c='gray')
     	begin = jdyear[0]+jdyear[1]-jd_ini
     	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
-
+    plt.grid(ls=':',c='gray')
+    plt.axhline(0.1,ls='--',c='red')
+    plt.axhline(-0.1,ls='--',c='red')
+    plt.savefig('orden_history_CAFE.pdf')
 
 """  
 i=getMatrizDatos("./flat_160106_evening.fits")

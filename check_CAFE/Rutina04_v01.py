@@ -105,13 +105,13 @@ def runRutina04(directorio):
     # Realizamos el checkeo de valores umbrales. 
     # Si el bias medio está entre 810 y 830 es correcto, y si el ruido de lectura es menor que 6 será también correcto.
     if media_total >= 810 and media_total <=830:
-        print "... Nivel BIAS medio: %.2f ... OK"%(media_total)
+        print "... Nivel BIAS medio: %.2f ADUs ... OK"%(media_total)
     else:
-        print "... Nivel BIAS medio: %.2f ... NO OK! - CHECK"%(media_total)
+        print "... Nivel BIAS medio: %.2f ADUs ... NO OK! - CHECK"%(media_total)
     if desvTipica_total < 6:
-        print "... Ruido de lectura medio: %.2f ... OK"%(desvTipica_total)
+        print "... Ruido de lectura medio: %.2f ADUs ... OK"%(desvTipica_total)
     else:
-        print "... Ruido de lectura medio: %.2f ... NO OK! - CHECK"%(desvTipica_total)
+        print "... Ruido de lectura medio: %.2f ADUs ... NO OK! - CHECK"%(desvTipica_total)
         
 """
 Funcion encargada de añadir pintar y añadir al historial los resultados obtenidos en la noche que se esta ejecutando
@@ -141,10 +141,12 @@ def plotHistory():
     plt.errorbar(jd-jd_ini,bias,yerr=0,fmt='o',c='red')
     for year in range(10):
     	jdyear = gcal2jd(2011+year,1,1)
-    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls=':', c='gray')
     	begin = jdyear[0]+jdyear[1]-jd_ini
     	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
-     
+    plt.grid(ls=':',c='gray')
+    plt.axhline(810,ls='--',c='red')
+    plt.axhline(830,ls='--',c='red')
     
     ax = plt.subplot(gs[1,0])
     ax.set_ylabel(r'Ruido de lectura (ADUs)')
@@ -155,10 +157,11 @@ def plotHistory():
     
     for year in range(10):
     	jdyear = gcal2jd(2011+year,1,1)
-    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls=':', c='gray')
     	begin = jdyear[0]+jdyear[1]-jd_ini
     	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
-    
+    plt.grid(ls=':',c='gray')
+    plt.axhline(6,ls='--',c='red')
     
     arr = std
     

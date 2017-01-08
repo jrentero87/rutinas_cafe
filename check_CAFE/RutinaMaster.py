@@ -92,6 +92,7 @@ Función que se encarga de lanzar las rutinas 1 y 2
 def run_Rutina01_Rutina02(directorio):
     #Arrancamos la rutina 01. 
     print "EJECUTANDO RUTINA 01: ARC-SPOTS ..."
+    print "==================================="
     # Obtenemos la matriz de datos del fichero que cogemos como referencia
     tbdata=Rutina01_v01.getMatrizDatos(ARCO_REF)
     # Generamos el fichero input_spot.txt que utilizaremos para el estudio
@@ -103,12 +104,13 @@ def run_Rutina01_Rutina02(directorio):
     Rutina01_v01.checkRutina01(FICH_ARCO)
      # Si no existe el fichero pdf, generamos el plot para la rutina 01
 #    if not os.path.exists("./Rut01_dat/Rutina01_plot_1night_"+directorio[0:6]+".pdf"):
-#        Rutina01_v01.Plot1night(directorio)
+    Rutina01_v01.Plot1night(directorio)
     
     # Cargamos ajustes de la rutina02
     Rutina02_v01.cargarAjustes(FLAT_REF)
     # Lanzamos la rutina 02.
     print "EJECUTANDO RUTINA 02: Posición e intensidad del flat ..."
+    print "========================================================"
     Rutina02_v01.rutina02Run(FICH_FLAT)
     
 
@@ -119,8 +121,10 @@ if len(sys.argv)==2:
         generarListaFicheros()
         run_Rutina01_Rutina02(sys.argv[1])
         print "EJECUTANDO RUTINA 04: Control del nivel de BIAS ..."
+        print "==================================================="
         Rutina04_v01.runRutina04(sys.argv[1])
         print "EJECUTANDO RUTINA 05: Calculando tiempos de observación ..."
+        print "==================================================="
         Rutina05_v01.runRutina05(sys.argv[1])
         # Hacemos los plots
         Rutina01_v01.plotHistory()

@@ -20,6 +20,7 @@ from os import listdir
 import matplotlib.gridspec as gridspec # GRIDSPEC !
 import datetime
 from jdcal import gcal2jd
+import glob
 
 # Para instalar ephem: pip install lmfit
 
@@ -418,19 +419,19 @@ def checkRutina01(listaArcos):
     file.close()
     
     #Realizamos el checkeo para la rutina01
-    # Si las desviciones medias de los spots son menores a 20 milipíxeles y la intensidad normalizada esta entre el 0.99% y el 1.01%
-    if desvX < 0.02 and desvX>-0.02:
-        print "... Desviación media en eje X: %.2f ... OK"%(desvX)
+    # Si las desviciones medias de los spots son menores a 100 milipíxeles y la intensidad normalizada esta entre el 0.99% y el 1.01%
+    if desvX < 0.1 and desvX>-0.1:
+        print "... Desviación media en eje X: %.2f pix ... OK"%(desvX)
     else:
-        print "... Desviación media en eje X: %.2f ... NO OK! - CHECK"%(desvX)
-    if desvY < 0.02 and desvY>-0.02:
-        print "... Desviación media en eje Y: %.2f ... OK"%(desvY)
+        print "... Desviación media en eje X: %.2f pix ... NO OK! - CHECK"%(desvX)
+    if desvY < 0.1 and desvY>-0.1:
+        print "... Desviación media en eje Y: %.2f pix ... OK"%(desvY)
     else:
-        print "... Desviación media en eje Y: %.2f ... NO OK! - CHECK"%(desvY)
+        print "... Desviación media en eje Y: %.2f pix ... NO OK! - CHECK"%(desvY)
     if intNorm > 0.99 and intNorm < 1.01:
-        print "... Ruido de lectura medio: %.2f ... OK"%(intNorm)
+        print "... Intensidad media normalizada: %.2f ... OK"%(intNorm)
     else:
-        print "... Ruido de lectura medio: %.2f ... NO OK! - CHECK"%(intNorm)
+        print "... Intensidad media normalizada: %.2f ... NO OK! - CHECK"%(intNorm)
         
 """
 Funcion encargada de añadir pintar y añadir al historial los resultados obtenidos en la noche que se esta ejecutando
@@ -461,10 +462,12 @@ def plotHistory():
     plt.errorbar(jd-jd_ini,desvX,yerr=0,fmt='o',c='red')
     for year in range(10):
     	jdyear = gcal2jd(2011+year,1,1)
-    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls=':', c='gray')
     	begin = jdyear[0]+jdyear[1]-jd_ini
     	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
-     
+    plt.grid(ls=':',c='gray')
+    plt.axhline(0.1,ls='--',c='red')
+    plt.axhline(-0.1,ls='--',c='red')
     
     ax = plt.subplot(gs[1,0])
     ax.set_ylabel(r'$\Delta y$ (pix)')
@@ -476,9 +479,12 @@ def plotHistory():
     plt.errorbar(jd-jd_ini,desvY,yerr=0,fmt='o',c='red')
     for year in range(10):
     	jdyear = gcal2jd(2011+year,1,1)
-    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls=':', c='gray')
     	begin = jdyear[0]+jdyear[1]-jd_ini
     	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
+    plt.grid(ls=':',c='gray')
+    plt.axhline(0.1,ls='--',c='red')
+    plt.axhline(-0.1,ls='--',c='red')
     
     ax = plt.subplot(gs[2,0])
     ax.set_ylabel('Norm. Intensity')
@@ -489,10 +495,12 @@ def plotHistory():
     
     for year in range(10):
     	jdyear = gcal2jd(2011+year,1,1)
-    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls='--', c='black')
+    	plt.axvline(jdyear[0]+jdyear[1]-jd_ini, ls=':', c='gray')
     	begin = jdyear[0]+jdyear[1]-jd_ini
     	ax.annotate(np.str(2011+year), xy=(begin+150, 890), xycoords='data', fontsize=14)
-    
+    plt.grid(ls=':',c='gray')
+    plt.axhline(1.01,ls='--',c='red')
+    plt.axhline(0.99,ls='--',c='red')
     arr = intNorm
     
     plt.scatter(jd-jd_ini,intNorm,c=arr, cmap='winter',vmin=3.5, vmax=6)
@@ -506,7 +514,7 @@ Plot de los resultados de la noche que se esta ejecutando
 def Plot1night(night):
 	#Directorio de trabajo y numero de ficheros
     DIR = './Rut01_dat'
-    nfiles= len([name for name in os.listdir(DIR) if os.path.isfile(os.path.join(DIR, name))])
+    nfiles= len(glob.glob('./Rut01_dat/*'+night+'.spot'))
 	#Inicializamos algunas variables
     XX = np.zeros((nfiles, 199))
     YY = np.zeros((nfiles, 199))
@@ -516,21 +524,22 @@ def Plot1night(night):
     JD = np.zeros((nfiles, 199))
 	#Leemos todos los ficheros creados para cada arco y los almacenamos en las matrices correspondientes
     ii = 0
-    for file in listdir('./Rut01_dat'):
+    for file in glob.glob('./Rut01_dat/*'+night+'.spot'):
         colnames = ('IdSpot','posX','posY','distX','distY','Intensidad','jd')
-        table = ascii.read('Rut01_dat/'+file, format='csv', names=colnames, comment='@')
+        table = ascii.read(file, format='csv', names=colnames, comment='@')
         jda  = np.array(table["jd"])
         x   = np.array(table["posX"])
         y   = np.array(table["posY"])
         dx  = np.array(table["distX"])
         dy  = np.array(table["distY"])
         I	= np.array(table["Intensidad"])
+        if ii==0: today = np.floor(jda[0])
         XX[ii,:] = x
         YY[ii,:] = y
         dX[ii,:] = dx
         dY[ii,:] = dy
         IN[ii,:] = I
-        JD[ii,:] = jda
+        JD[ii,:] = jda-today
         ii = ii+1
     
 	# Calculamos los offsets de cada spot respecto a la mediana de ese spot en todos los arcos de la noche
@@ -552,36 +561,36 @@ def Plot1night(night):
     ax.set_ylabel(r'$\Delta x$ (mpix)')
     ax.get_xaxis().set_ticks([])
     ax.set_ylim([-50,55])
-    ax.set_xlim([5,20])
+    ax.set_xlim([np.min(JD)*24.-0.2,np.max(JD)*24.+0.2])
     for i in range(199):
         Xplot = (XX[:,i]-np.median(XX[:,i]))*1.e3
-        plt.plot((JD[:,i]-2457594.)*24.,Xplot,'+',c='Silver',zorder=-1,alpha=0.6)
+        plt.plot((JD[:,i])*24.,Xplot,'+',c='Silver',zorder=-1,alpha=0.6)
     for i in range(nfiles):
         Xplot = nXX[i,:]*1.e3
-        plt.errorbar((JD[i,0]-2457594.)*24.,np.median(Xplot),yerr=sigmaG(Xplot),fmt='o',c='b',zorder=1)
+        plt.errorbar((JD[i,0])*24.,np.median(Xplot),yerr=sigmaG(Xplot),fmt='o',c='b',zorder=1)
     
     # Plot para los offsets relativos en la dirección Y
     ax = plt.subplot(gs[1,0])
     ax.set_ylabel(r'$\Delta y$ (mpix)')
     ax.get_xaxis().set_ticks([])
     ax.set_ylim([-50,50])
-    ax.set_xlim([5,20])
+    ax.set_xlim([np.min(JD)*24.-0.2,np.max(JD)*24.+0.2])
     for i in range(199):
         Xplot = (YY[:,i]-np.median(YY[:,i]))*1.e3
-        plt.plot((JD[:,i]-2457594.)*24.,Xplot,'+',c='Silver',zorder=-1,alpha=0.6)
+        plt.plot((JD[:,i])*24.,Xplot,'+',c='Silver',zorder=-1,alpha=0.6)
     for i in range(nfiles):
         Xplot = nYY[i,:]*1.e3
-        plt.errorbar((JD[i,0]-2457594.)*24.,np.median(Xplot),yerr=sigmaG(Xplot),fmt='o',c='r',zorder=1)
+        plt.errorbar((JD[i,0])*24.,np.median(Xplot),yerr=sigmaG(Xplot),fmt='o',c='r',zorder=1)
     # Plot para la intensidad
     ax = plt.subplot(gs[2,0])
     ax.set_ylabel('Norm. Intensity')
     ax.set_xlabel('JD-2457594 (h)')
     ax.set_ylim([0.95,1.02])
-    ax.set_xlim([5,20])
+    ax.set_xlim([np.min(JD)*24.-0.2,np.max(JD)*24.+0.2])
     for i in range(199):
-        plt.plot((JD[:,i]-2457594.)*24.,nIN[:,i],'+',c='Silver',zorder=-1,alpha=0.6)
+        plt.plot((JD[:,i])*24.,nIN[:,i],'+',c='Silver',zorder=-1,alpha=0.6)
     for i in range(nfiles):
-        plt.errorbar((JD[i,0]-2457594.)*24.,np.median(nIN[i,:]),yerr=sigmaG(nIN[i,:]),fmt='o',c='forestgreen',zorder=1)
+        plt.errorbar((JD[i,0])*24.,np.median(nIN[i,:]),yerr=sigmaG(nIN[i,:]),fmt='o',c='forestgreen',zorder=1)
     
     plt.savefig("./Rut01_dat/Rutina01_plot_1night_"+night[0:6]+".pdf") 
 

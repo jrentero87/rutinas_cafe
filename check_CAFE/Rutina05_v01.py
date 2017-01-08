@@ -108,7 +108,7 @@ def runRutina05(directorio):
     print "Tiempo total de exposicion: %.2f horas"%(tiempoTotal/3600.0)
     print "Tiempo total para ficheros ARCO: %.2f horas"%(tiempoArco/3600.0)
     print "Tiempo total para ciencia: %.2f horas"%(tiempoCiencia/3600.0)
-    print "EL APROVECHAMIENTO HA SIDO DEL: %.2f por ciento"%(eficiencia)
+    print "EL APROVECHAMIENTO HA SIDO DEL: %.2f "%(eficiencia)+"%"
     
     # Almacenamos los resultados en un fichero: eficiencia_fecha.txt
     # Abrimos el fichero donde escribiremos los resultados
@@ -119,7 +119,7 @@ def runRutina05(directorio):
     outfile.write("Tiempo total de exposicion: "+str(tiempoTotal/3600.0)+" horas\n")
     outfile.write("Tiempo total para ficheros ARCO: "+str(tiempoArco/3600.0)+" horas\n")
     outfile.write("Tiempo total para ciencia: "+str(tiempoCiencia/3600.0)+" horas\n")
-    outfile.write("EL APROVECHAMIENTO HA SIDO DEL: "+str(eficiencia)+" por ciento\n")
+    outfile.write("EL APROVECHAMIENTO HA SIDO DEL: "+str(eficiencia)+" %\n")
     outfile.close()
     
 
